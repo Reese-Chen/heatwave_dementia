@@ -22,3 +22,5 @@ We also obtained the national gender and age structures from the World Populatio
 
 ## Scripts
 All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data detraction and index calculation are included in the file "data detraction and prepocessing". 
+
+Scripts were developed using R and Python.
