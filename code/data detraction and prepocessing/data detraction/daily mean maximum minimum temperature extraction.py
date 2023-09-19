@@ -1,7 +1,7 @@
 #%%
 
 ###############################################################################
-### 从1990-01-01到2019-12-31每个格点上的每日最高，最低，平均温度，分别获得三张表格
+### from 1990-01-01 to 2019-12-31 min/mean/max temperature on each grid cell
 ###############################################################################
 
 import numpy as np
@@ -23,7 +23,7 @@ era5_2mt_min = ee.ImageCollection('ECMWF/ERA5/DAILY').select('minimum_2m_air_tem
 
 #%%
 
-# 提取某一坐标点附近数据
+# extract data around a grid point
 def getdata_max(lon,lat): 
     poi = ee.Geometry.Point(lon, lat)
     scale = 1000
@@ -40,7 +40,7 @@ def getdata_mean(lon,lat):
     return era5_2mt_mean.getRegion(poi, scale).getInfo()
 
 
-#定义函数将某个坐标点数据转化为时间序列
+#convert data to time series
 def ee_array_to_df(arr, list_of_bands):
     """Transforms client-side ee.Image.getRegion array to pandas.DataFrame."""
     df = pd.DataFrame(arr)
@@ -68,7 +68,7 @@ def ee_array_to_df(arr, list_of_bands):
 
 #%%
 
-#提取所有在陆地上的经纬度点
+# extract all grid cells
 from global_land_mask import globe
 k = 0
 for i in range(-85,86,1):
@@ -86,7 +86,7 @@ location = location[:,4406:]
                   
 #%%
 
-# 获取每个坐标点的经度、纬度、30年平均最高温度、最低温度、平均温度
+# get average min/mean/max temperature on each grid cell
 #df = pd.DataFrame(data=None,columns=['lon','lat','max','min','mean'])
 
 for i in range(2644,3336):
