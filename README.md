@@ -21,6 +21,6 @@ GDP by states in United States was derived from the U.S. Bureau of Economic Anal
 We also obtained the national gender and age structures from the World Population Review (https://worldpopulationreview.com/).
 
 ## Scripts
-All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data detraction and index calculation are included in the file "data detraction and prepocessing". 
+All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
 
 Scripts were developed using R and Python.
