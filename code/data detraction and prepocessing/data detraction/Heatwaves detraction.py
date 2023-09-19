@@ -17,7 +17,7 @@ def getdata(lon,lat):
     return era5_2mt.getRegion(poi, scale).getInfo()
 
 import pandas as pd
-#定义函数将某个坐标点数据转化为时间序列
+# convert data to time series
 def ee_array_to_df(arr, list_of_bands):
     """Transforms client-side ee.Image.getRegion array to pandas.DataFrame."""
     df = pd.DataFrame(arr)
@@ -50,14 +50,14 @@ def t_modis_to_celsius(t_modis):
 #%% 
 import datetime
 
-#判断润年
+#Determine if it's run'n
 def nian(n):
     if ((n%4==0 and n%100!=0)or(n%400==0)):
         return 1
     else:
         return 0
 
-#dayofyear获得日期
+#dayofyear
 def doy2date(year,doy):    
     month_leapyear=[31,29,31,30,31,30,31,31,30,31,30,31]
     month_notleap= [31,28,31,30,31,30,31,31,30,31,30,31]
@@ -82,7 +82,7 @@ def doy2date(year,doy):
                 break
     return month,day
 
-#年月日获得datetime
+#get datetime
 def get_datetime(year,month,day):
     dt = str(year)+str(month)+str(day)
     date =  datetime.datetime.strptime(str(dt),'%Y%m%d')
