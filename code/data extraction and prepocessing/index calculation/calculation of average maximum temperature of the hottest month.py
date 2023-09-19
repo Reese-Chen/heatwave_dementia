@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from global_land_mask import globe
 
-#%% 读入数据
+#%% load data
 
 max_data = pd.read_csv('d:\\heatwave and dementia\\data\\daily max temperature.csv',sep=',',header=None)
 pop = np.loadtxt('d:\\heatwave and dementia\\data\\各坐标点2000-2020年均人口密度.csv',delimiter = ',')
@@ -14,7 +14,7 @@ hw_cn = np.loadtxt("d:\\heatwave and dementia\\data\\hw_english_countrynames.csv
 
 heatwave_usa = pd.read_csv('d:\\heatwave and dementia\\data\\美国各坐标点热浪.csv',sep=',')
 
-#%% 定义判断润年的函数
+#%% Determine if it's run'n
 
 def run(n):
     if ((n%4==0 and n%100!=0)or(n%400==0)):
@@ -22,7 +22,7 @@ def run(n):
     else:
         return 0
 
-#%% 统计1990-2019每个月天数并建立前缀和数组
+#%% Count the number of days per month from 1990-2019 and build arrays
 
 day_of_month0 = [31,28,31,30,31,30,31,31,30,31,30,31]
 day_of_month1 = [31,29,31,30,31,30,31,31,30,31,30,31]
@@ -51,7 +51,7 @@ for i in range(15456):
         end = days_cut[j+1]
         max_month[i,j] = np.mean(xmax[start:end])
         
-#%% 计算每个坐标点30年每年最热月份的温度
+#%% Calculates the average maximum temperature for each month at each coordinate point
 
 max_year = np.zeros((15456,30))
 for i in range(15456):
@@ -62,7 +62,7 @@ for i in range(15456):
 max_year1 = pd.DataFrame(max_year)
 max_year1.to_csv('d:\\heatwave and dementia\\data\\maxt_year.csv',sep=',',index=False,header=None)
 
-#%% 获取每个坐标点对应经纬度
+#%% Get the latitude and longitude corresponding to each coordinate point
 
 k = 0
 for i in range(-85,86,1):
@@ -78,9 +78,9 @@ for i in range(-85,86,1):
               
 location = location[:,4406:]   
 
-#%% 人口加权算各国30年最热月份平均温度
+#%% Population-weighted average temperature of the hottest month in each country over 30 years
 
-country = np.unique(hw_cn) #获取所有坐标点对应的全部不重复国家名称
+country = np.unique(hw_cn)
 n_country = np.shape(country)[0]
 max_montht_country = np.zeros((n_country,30))
 pop_country = np.zeros(n_country)
@@ -101,7 +101,7 @@ max_montht_country['country'] = country
 
 max_montht_country.to_csv('d:\\heatwave and dementia\\data\\各国30年最热月份平均温度.csv',sep=',',index=True,header=True)
 
-#%% 人口加权算美国各州30年最热月份平均温度
+#%% for USA
 
 #heatwave_usa = heatwave_usa.rename(columns={'Unnamed: 0': 'index'})
 
