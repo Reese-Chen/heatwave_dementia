@@ -55,7 +55,6 @@ def ee_array_to_df(arr, list_of_bands):
     return df
 
 #%%
-#提取所有在陆地上的经纬度点
 import numpy as np
 from global_land_mask import globe
 k = 0
@@ -69,7 +68,7 @@ for i in range(-85,86,1):
                 location = new
             else:
                 location = np.column_stack((location,new))
-#%% 实验
+#%% 
 
 lon = int(location[0,10000])
 lat = int(location[1,10000])
@@ -99,7 +98,7 @@ np.savetxt('d:\\heatwave and dementia\\data\\各坐标点2000-2020年均人口�
 
 pop_matrix = np.loadtxt('d:\\heatwave and dementia\\data\\各坐标点2000-2020年均人口密度.csv', delimiter = ',')
 
-#%% 绘图展示
+#%% plot
 from pyecharts import options as opts
 from pyecharts.charts import Geo
 from pyecharts.render import make_snapshot
@@ -110,8 +109,8 @@ data = pop_matrix[4406:,:]
 indx = np.arange(15456)
 data= np.c_[indx,data]
 data = pd.DataFrame(data,columns=['indx', 'lon', 'lat', 'pop'])
-geo_sight_coord={data['indx'][i]: [data['lon'][i], data['lat'][i]] for i in range(len(data))} #构造位置字典数据
-data_pair=[(data['indx'][i], data['pop'][i]) for i in range(len(data))] #构造项目租金数据
+geo_sight_coord={data['indx'][i]: [data['lon'][i], data['lat'][i]] for i in range(len(data))} 
+data_pair=[(data['indx'][i], data['pop'][i]) for i in range(len(data))] 
 pieces = [
         {'min': 0,'max': 10, 'label': '0-10', 'color': '#3700A4'},
         {'min': 10,'max': 100, 'label': '10-100', 'color': '#50A3BA'},
@@ -119,12 +118,12 @@ pieces = [
         {'min': 1000,'max': 10000, 'label': '1000-10000', 'color': '#DD675E'},
         {'min': 10000, 'max': 14900, 'label': '10000+', 'color': '#D94E5D'}
 ]
-g=Geo() #地理初始化
-g.add_schema(maptype="world") #限定范围
-for key, value in geo_sight_coord.items(): #对地理点循环
-    g.add_coordinate(key, value[0], value[1]) #追加点位置
+g=Geo() 
+g.add_schema(maptype="world") 
+for key, value in geo_sight_coord.items(): 
+    g.add_coordinate(key, value[0], value[1]) 
 g.add("population density", data_pair, symbol_size=2) 
-g.set_series_opts(label_opts=opts.LabelOpts(is_show=False), type='scatter')  #星散点图scatter
+g.set_series_opts(label_opts=opts.LabelOpts(is_show=False), type='scatter')  
 g.set_global_opts(
     visualmap_opts=opts.VisualMapOpts(is_piecewise=True,pieces=pieces)
 ) 
