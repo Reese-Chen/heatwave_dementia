@@ -10,6 +10,8 @@ We obtained the data for dementia from the Global Burden of Disease (GBD) study 
 ### 2. Temperature and population data
 We obtained the daily temperatures for these countries and territories using the ERA5 database, which is a gridded reanalysis dataset produced by the European Centre for Medium-Range Weather Forecasts with a 1° × 1° spatial resolution on the Google Earth Engine (https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_DAILY#description).
 
+We derived the gridded daily temperatures at 1km resolution for the United Kingdom from HadUK-Grid Gridded Climate Observations (https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid).
+
 To apply the population-weighted methods to the heatwave measures, we also obtained the estimated numbers of people (per 30-arc-second grid cell) from the 2010 Census on Google Earth Engine (https://developers.google.cn/earth-engine/datasets/catalog/CIESIN_GPWv411_GPW_Basic_Demographic_Characteristics?hl=en).
 
 ### 3. GDP data, population, and GNI indices
@@ -19,6 +21,11 @@ GDP by states in United States was derived from the U.S. Bureau of Economic Anal
 
 ### 4. Nuisance variables
 We also obtained the national gender and age structures from the World Population Review (https://worldpopulationreview.com/).
+
+### 5. UK Biobank dataset
+For individual-level validation, we utilized the home location and diagnosis data of dementia from UK Biobank (www.ukbiobank.ac.uk).
+
+### 5. 
 
 ## Scripts
 All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
