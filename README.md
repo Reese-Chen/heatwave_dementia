@@ -25,7 +25,7 @@ We also obtained the national gender and age structures from the World Populatio
 ### 5. UK Biobank dataset
 For individual-level validation, we utilized the home location and diagnosis data of dementia from UK Biobank (www.ukbiobank.ac.uk).
 
-## Database
+## Dataset
 We constructed a Dementia-heatwave dataset spanning 137 countries from 1990 to 2019, stored in the data folder, which includes the data used for subsequent analysis.
 
 ## Scripts
