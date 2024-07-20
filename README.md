@@ -25,8 +25,6 @@ We also obtained the national gender and age structures from the World Populatio
 ### 5. UK Biobank dataset
 For individual-level validation, we utilized the home location and diagnosis data of dementia from UK Biobank (www.ukbiobank.ac.uk).
 
-### 5. 
-
 ## Scripts
 All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
 
