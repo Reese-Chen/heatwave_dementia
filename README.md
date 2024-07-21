@@ -26,9 +26,9 @@ We also obtained the national gender and age structures from the World Populatio
 For individual-level validation, we utilized the home location and diagnosis data of dementia from UK Biobank (www.ukbiobank.ac.uk).
 
 ## Dataset
-We constructed a Dementia-heatwave dataset spanning 137 countries from 1990 to 2019, stored in the data folder, which includes the data used for subsequent analysis.
+We constructed a Dementia-heatwave dataset spanning 137 countries from 1990 to 2019, stored in the "data" folder (https://github.com/Reese-Chen/heatwave_dementia/tree/main/data), which includes the data used for subsequent analysis.
 
 ## Scripts
-All necessary scripts should be in the "code" file. Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
+All necessary scripts should be in the "code" file (https://github.com/Reese-Chen/heatwave_dementia/tree/main/code). Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
 
 Scripts were developed using R and Python.
