@@ -23,6 +23,10 @@ library(Rtsne)
 library(ggExtra)
 library(ggsci)
 library(lsr)
+library(performance)
+library(pbkrtest)
+library(lmtest)
+library(predictmeans)
 
 library(aTSA)
 
@@ -37,6 +41,11 @@ data = data[,-1]
 
 data_high = data[which(data$gnigroup=='high income'),]
 data_low = data[which(data$gnigroup=='mid and low income'),]
+
+data$extreme = data$hw*abs(data$cw)
+
+hist(data$cw,labels = T)
+hist(data$hw,labels = T)
 
 ################################################################################
 # form accdata and incrementdata
@@ -160,6 +169,8 @@ hist(data$cw,labels=T)
 hist(data$sex_ratio,labels=T)
 hist(data$age_ratio,labels=T)
 
+#data$inci_as = log(data$inci_as)
+
 data$inci_all = log(data$inci_all)
 data$prev_all = log(data$prev_all)
 data$HW_count = log(data$HW_count+1)
@@ -193,6 +204,9 @@ data$cw = scale(data$cw)
 data$sex_ratio = scale(data$sex_ratio)
 data$age_ratio = scale(data$age_ratio)
 
+hist(data$extreme)
+data$extreme = scale(data$extreme)
+
 # *2.2 mixed effect model-------------------------------------------------------
 # principle model
 model = lmer(inci_as~year*hw*gdp+(1+year|country),data = data,
@@ -201,6 +215,32 @@ summary(model)
 confint(model)
 anova(model)
 ranova(model)
+performance::model_performance(model)
+
+predicted = predict(model, newdata=data)
+plot(predicted, residuals(model))
+cor(predicted,data$inci_as)
+
+residuals = summary(model)$residuals
+shapiro.test(residuals)
+
+drop1(model)
+
+
+model1= lmer(inci_as~year+(1+year|country),data=data,
+             control = lmerControl(optimizer ="Nelder_Mead"))
+
+lrtest(model1,model0)
+
+shapiro.test(residuals(model))
+
+model0 = lmer(inci_as~year*hw*gdp+(1+year|country),data = data,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+model1 = lmer(inci_as~year+hw+gdp+year:gdp+year:gdp:hw+gdp:hw+(1+year|country),data = data,
+              control = lmerControl(optimizer ="Nelder_Mead"))
+permlmer(model1, model0, nperm=300,plot=F,ncore=8)
+
+
 
 # look at the different between high- and low- and middle income countries
 model = lmer(inci_as~year*hw*gdp+gnigroup+gnigroup:year:hw+(1+year|country),data=data,
