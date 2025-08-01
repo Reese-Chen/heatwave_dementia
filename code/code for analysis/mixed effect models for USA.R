@@ -2,48 +2,35 @@
 library(lme4)
 library(lmerTest)
 library(dplyr)
-library(optimx)
-library(mvmeta)
-library(meta)
-library(grid)
-library(forestploter)
-library(forestplot)
-library(arm)
-library(ggplot2)
-library(ggiraphExtra)
-library(cowplot)
-library(ggcorrplot)
-library(tidyverse)
-library(caret)
-library(car)
-library(glmnet)
-library(foreign)
-library(metafor)
-library(Rtsne)
-library(ggExtra)
-library(ggsci)
-library(Rmisc)
 
 ################################################################################
 # read data
 #######################################
+
+rm(list=ls())
 setwd("d:/heatwave and dementia/data")
 inci_as = read.table(file = "age-standardized both sex incidence rate of each state in USA.csv",header=T,
                      sep=",",fill = T,encoding="UTF-8")
 hw = read.table(file = "hw_usa_state.csv", header = T , 
                 sep = "," , fill = TRUE , encoding = "UTF-8")
-gdp = read.table(file = "美国各州gdp时间序列.csv", header = T , 
+gdp = read.table(file = "缇庡浗鍚勫窞gdp鏃堕棿搴忓垪.csv", header = T , 
                  sep = "," , fill = TRUE , encoding = "UTF-8")
+
+gdp_per_capita = read.table("per capita gdp by state in USA.csv",header = T,
+                            sep = "," , fill = TRUE , encoding = "UTF-8")
 
 # sort
 inci_as = inci_as[order(inci_as$location_name,inci_as$year),]
 gdp = gdp[order(gdp$GeoName),]
 hw = hw[order(hw$state),]
+gdp_per_capita = gdp_per_capita[order(gdp_per_capita$Area),]
 
 # get state
 state = hw$state
+state = state[order(state)]
 inci_as = inci_as[which(inci_as$location_name %in% state),]
 gdp = gdp[which(gdp$GeoName %in% state),]
+gdp_per_capita = gdp_per_capita[gdp_per_capita$Area %in% state,]
 
 ################################################################################
 # reform data
@@ -56,7 +43,7 @@ for (i in 1997:2019){
     new_gdp = gdp[,i-1997+3]
     year = rep(i-1997,46)
     new_state = state
-    
+    new_gdp_per_capita = rep(NA,46)
   }
   else{
     
@@ -65,77 +52,80 @@ for (i in 1997:2019){
     new_gdp = append(new_gdp,gdp[,i-1997+3])
     year = append(year,rep(i-1997,46))
     new_state = append(new_state,state)
+    if (i>=2008 & i<=2017){
+      new_gdp_per_capita = append(new_gdp_per_capita,gdp_per_capita[,i-2007])
+    }
+    else{
+      new_gdp_per_capita = append(new_gdp_per_capita,rep(NA,46))
+    }
   }
 }
 
 # combine data
-data = cbind(new_inci_as,new_hw,new_gdp,year)
+data = cbind(new_inci_as,new_hw,new_gdp,new_gdp_per_capita,year)
 data = as.data.frame(data)
 data$state = new_state
 data$state = as.factor(data$state)
-colnames(data) = c('inci_as','hw','gdp','year','state')
+colnames(data) = c('inci_as','hw','gdp','gdp_per_cap','year','state')
+
+data[, 1:5] <- lapply(data[, 1:5], as.numeric)
 
 
 ################################################################################
-# reform data with acc7
+# reform data with acc3
 ################################################################################
 
 accdata = data
-accdata$acc7 = accdata$hw
-accdata$inci_as_delta = accdata$inci_as
-for (i in 2003:2019){
+accdata$acc3 = accdata$hw
+for (i in 1999:2019){
   y = i-1997
-  accdata[which(accdata$year==y),]$inci_as_delta = accdata[which(accdata$year==y),]$inci_as_delta-
-    accdata[which(accdata$year==y-1),]$inci_as
-  accdata[which(accdata$year==y),]$acc7 = accdata[which(accdata$year==y),]$hw+
-    accdata[which(accdata$year==y-1),]$hw+accdata[which(accdata$year==y-2),]$hw+
-    accdata[which(accdata$year==y-3),]$hw+accdata[which(accdata$year==y-4),]$hw+
-    accdata[which(accdata$year==y-5),]$hw+accdata[which(accdata$year==y-6),]$hw
+  accdata[which(accdata$year==y),]$acc3 = accdata[which(accdata$year==y),]$hw+
+    accdata[which(accdata$year==y-1),]$hw+accdata[which(accdata$year==y-2),]$hw
 }
-accdata = accdata[which(accdata$year>5),]
-accdata$year = accdata$year-6
+accdata = accdata[which(accdata$year>1),]
+accdata$year = accdata$year-2
 
 
 #########################################
 # run mixed effect model with hw
 #########################################
 
-hist(data$inci_as,labels=T)
-hist(data$hw,labels = T)
-hist(data$gdp,labels=T)
+variables_to_scale <- c("hw", "gdp","gdp_per_cap")
 
-data$gdp = log(data$gdp)
-data$inci_as = scale(data$inci_as)
-data$hw = scale(data$hw)
-data$gdp = scale(data$gdp)
+data_scale <- data %>%
+  group_by(state) %>%
+  mutate(across(all_of(variables_to_scale), 
+                ~ scale(., center = TRUE, scale = TRUE))) %>%
+  ungroup()
 
-model = lmer(inci_as~year*hw*gdp+(1+year|state),data = data,
+model = lmer(inci_as~year*hw*gdp_per_cap+(1+year|state),data = data_scale[!is.na(data_scale$gdp_per_cap),],
              control = lmerControl(optimizer ="Nelder_Mead"))
 summary(model)
 confint(model)
 anova(model)
 ranova(model)
 
-
+model = lm(inci_as~hw*gdp+year,data_scale[data_scale$state=="Alaska",])
+summary(model)
+confint(model)
 
 ################################################################################
-# regression with acc7
+# regression with acc3
 ################################################################################
 
-hist(accdata$inci_as,labels=T)
-hist(accdata$inci_as_delta,labels=T)
-hist(accdata$acc7,labels=T)
-hist(accdata$gdp,labels=T)
+variables_to_scale <- c("acc3", "gdp","gdp_per_cap")
 
-accdata$gdp = log(accdata$gdp)
-accdata$acc7 = scale(accdata$acc7)
-accdata$inci_as_delta = scale(accdata$inci_as_delta)
-accdata$inci_as = scale(accdata$inci_as)
-accdata$gdp = scale(accdata$gdp)
+accdata_scale <- accdata %>%
+  group_by(state) %>%
+  mutate(across(all_of(variables_to_scale), 
+                ~ scale(., center = TRUE, scale = TRUE))) %>%
+  ungroup()
 
-model = lmer(inci_as~year*acc7*gdp+(1+year|state),data = accdata,
+model = lmer(inci_as~year*acc3*gdp_per_cap+(1+year|state),data = accdata_scale[!is.na(accdata_scale$gdp_per_cap),],
              control = lmerControl(optimizer ="Nelder_Mead"))
 summary(model)
 confint(model)
+
+
 
 
