@@ -1,31 +1,11 @@
 # load packages
-library(lme4)
-library(lmerTest)
-library(dplyr)
-library(optimx)
-library(mvmeta)
-library(meta)
-library(grid)
-library(forestploter)
-library(forestplot)
-library(arm)
-library(ggplot2)
-library(ggiraphExtra)
-library(cowplot)
-library(ggcorrplot)
-library(tidyverse)
-library(caret)
-library(car)
-library(glmnet)
-library(foreign)
-library(metafor)
-library(Rtsne)
-library(ggExtra)
-library(ggsci)
+library(imputeTS)
 
 ################################################################################
 # load data
 ################################################################################
+
+rm(list=ls())
 
 # 1. read data------------------------------------------------------------------
 setwd("d:/heatwave and dementia/data")
@@ -59,8 +39,8 @@ hw_mean_degree = read.table(file = "HW_mean_degree_country.csv", header = F ,
 hw_max_degree = read.table(file = "HW_max_degree_country.csv", header = F , 
                            sep = "," , fill = TRUE , encoding = "UTF-8",quote='')
 
-gdp = read.table(file = "GDP世界各国1960-2021.csv", header = T , 
-                 sep = "\t" , fill = TRUE , encoding = "UTF-8",quote="")
+gdp = read.table(file = "GDP per capita by country 1990-2019.csv", header = T , 
+                 sep = "," , fill = TRUE , encoding = "UTF-8",quote="")
 pop = read.table(file = "population 266 countries 1990-2019.csv",header=T,
                  sep = ",", fill = TRUE, encoding = "UTF-8",quote='')
 temp = read.table(file = "各国30年最热月份平均温度.csv",header=T,
@@ -88,15 +68,26 @@ hw_max_degree$V31[which(hw_max_degree$V31=='United Arab Emirates ')]='United Ara
 temp$country[which(temp$country=='United Arab Emirates ')]='United Arab Emirates'
 cw$V31[which(cw$V31=='United Arab Emirates ')]='United Arab Emirates'
 
+hw$cname[which(hw$cname=='Swaziland')]='Eswatini'
+hw_count$V31[which(hw_count$V31=='Swaziland')]='Eswatini'
+hw_days$V31[which(hw_days$V31=='Swaziland')]='Eswatini'
+hw_degree$V31[which(hw_degree$V31=='Swaziland')]='Eswatini'
+hw_mean_length$V31[which(hw_mean_length$V31=='Swaziland')]='Eswatini'
+hw_mean_degree$V31[which(hw_mean_degree$V31=='Swaziland')]='Eswatini'
+hw_max_degree$V31[which(hw_max_degree$V31=='Swaziland')]='Eswatini'
+temp$country[which(temp$country=='Swaziland')]='Eswatini'
+cw$V31[which(cw$V31=='Swaziland')]='Eswatini'
+
 
 # GDP
-gdp$Country.Name[which(gdp$Country.Name=='\"Bahamas, The\"')] = 'Bahamas'
-gdp$Country.Name[which(gdp$Country.Name=='\"Congo, Rep.\"')] = 'Congo'
+
+gdp$Country.Name[which(gdp$Country.Name=='Bahamas The')] = 'Bahamas'
+gdp$Country.Name[which(gdp$Country.Name=='Congo Rep.')] = 'Congo'
 gdp$Country.Name[which(gdp$Country.Name=="Cote d'Ivoire")] = "C?te d'Ivoire"
 gdp$Country.Name[which(gdp$Country.Name=='Czechia')] = 'Czech Republic'
-gdp$Country.Name[which(gdp$Country.Name=='\"Egypt, Arab Rep.\"')] = 'Egypt'
-gdp$Country.Name[which(gdp$Country.Name=='\"Iran, Islamic Rep.\"')] = 'Iran'
-gdp$Country.Name[which(gdp$Country.Name=='\"Korea, Rep.\"')] = 'Korea'
+gdp$Country.Name[which(gdp$Country.Name=='Egypt Arab Rep.')] = 'Egypt'
+gdp$Country.Name[which(gdp$Country.Name=='Iran Islamic Rep.')] = 'Iran'
+gdp$Country.Name[which(gdp$Country.Name=='Korea Rep.')] = 'Korea'
 gdp$Country.Name[which(gdp$Country.Name=='Kyrgyz Republic')] = 'Kyrgyzstan'
 gdp$Country.Name[which(gdp$Country.Name=='Lao PDR')] = "Lao People's Democratic Republic"
 gdp$Country.Name[which(gdp$Country.Name=='Libya')] = 'Libyan Arab Jamahiriya'
@@ -105,13 +96,19 @@ gdp$Country.Name[which(gdp$Country.Name=='St. Lucia')] = 'Saint Lucia'
 gdp$Country.Name[which(gdp$Country.Name=='Slovak Republic')] = 'Slovakia'
 gdp$Country.Name[which(gdp$Country.Name=='Solomon Islands')] = 'Solomon Islands (the)'
 gdp$Country.Name[which(gdp$Country.Name=='Turkiye')] = 'Turkey'
-gdp$Country.Name[which(gdp$Country.Name=='\"Venezuela, RB\"')] = 'Venezuela'
+gdp$Country.Name[which(gdp$Country.Name=='Venezuela, RB')] = 'Venezuela'
 gdp$Country.Name[which(gdp$Country.Name=='Vietnam')] = 'Viet Nam'
-gdp$Country.Name[which(gdp$Country.Name=='\"Yemen, Rep.\"')] = 'Yemen'
+gdp$Country.Name[which(gdp$Country.Name=='Yemen Rep.')] = 'Yemen'
+gdp$Country.Name[which(gdp$Country.Name=='Venezuela RB')] = 'Venezuela'
 
 #pop
+pop$Country.Name[which(pop$Country.Name=='Bahamas The')] = 'Bahamas'
+pop$Country.Name[which(pop$Country.Name=='Congo Rep.')] = 'Congo'
 pop$Country.Name[which(pop$Country.Name=="Cote d'Ivoire")] = "C?te d'Ivoire"
 pop$Country.Name[which(pop$Country.Name=='Czechia')] = 'Czech Republic'
+pop$Country.Name[which(pop$Country.Name=='Egypt Arab Rep.')] = 'Egypt'
+pop$Country.Name[which(pop$Country.Name=='Iran Islamic Rep.')] = 'Iran'
+pop$Country.Name[which(pop$Country.Name=='Korea Rep.')] = 'Korea'
 pop$Country.Name[which(pop$Country.Name=='Kyrgyz Republic')] = 'Kyrgyzstan'
 pop$Country.Name[which(pop$Country.Name=='Lao PDR')] = "Lao People's Democratic Republic"
 pop$Country.Name[which(pop$Country.Name=='Libya')] = 'Libyan Arab Jamahiriya'
@@ -120,7 +117,10 @@ pop$Country.Name[which(pop$Country.Name=='St. Lucia')] = 'Saint Lucia'
 pop$Country.Name[which(pop$Country.Name=='Slovak Republic')] = 'Slovakia'
 pop$Country.Name[which(pop$Country.Name=='Solomon Islands')] = 'Solomon Islands (the)'
 pop$Country.Name[which(pop$Country.Name=='Turkiye')] = 'Turkey'
+pop$Country.Name[which(pop$Country.Name=='Venezuela, RB')] = 'Venezuela'
 pop$Country.Name[which(pop$Country.Name=='Vietnam')] = 'Viet Nam'
+pop$Country.Name[which(pop$Country.Name=='Yemen Rep.')] = 'Yemen'
+pop$Country.Name[which(pop$Country.Name=='Venezuela RB')] = 'Venezuela'
 
 # inci
 inci$location_name[which(inci$location_name=='Bolivia (Plurinational State of)')] = 'Bolivia'
@@ -241,15 +241,9 @@ country_inci = unique(inci$location_name) # calculate intersection
 country_gdp = unique(gdp$Country.Name)
 setdiff(x=country, y=country_inci)
 setdiff(x=country, y=country_gdp)
+setdiff(x=country_inci, y=country)
 country = intersect(x=country,y=country_inci)
 country = intersect(x=country,y=country_gdp)
-
-# exclude countries with missing gdp data
-ex_country = gdp$Country.Name[which(rowSums(is.na(gdp))>0)]
-ex_country = intersect(x=country,y=ex_country)
-for (i in ex_country){
-  country = country[-which(country==i)]
-}
 
 inci = inci[which(inci$location_name %in% country),]
 prev_all = prev_all[which(prev_all$location_name %in% country),]
@@ -296,6 +290,32 @@ cx = c('Russia','H')
 GNIcata = rbind(GNIcata,cx)
 cx = c('Slovakia','H')
 GNIcata = rbind(GNIcata,cx)
+cx = c("C?te d'Ivoire",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Congo",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Egypt",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Iran",'UM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Kyrgyzstan",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Lao People's Democratic Republic",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Libyan Arab Jamahiriya",'UM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Saint Lucia",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Solomon Islands (the)",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Turkey",'UM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Venezuela",'UM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Viet Nam",'LM')
+GNIcata = rbind(GNIcata,cx)
+cx = c("Yemen",'L')
+GNIcata = rbind(GNIcata,cx)
 
 # 4. sort-----------------------------------------------------------------------
 hw = hw[order(hw$cname),]
@@ -330,8 +350,34 @@ mortfordementia_as = dementiamort_as
 mortfordementia_as$val = dementiamort_as$val/prev_as$val*100000
 
 ################################################################################
+# complete missing GDP data
+################################################################################
+
+ex_country = gdp$Country.Name[which(rowSums(is.na(gdp))>0)]
+country_exclude = ex_country[rowSums(is.na(gdp[which(gdp$Country.Name %in% ex_country),]))>6]
+
+ex_data = t(gdp[which(gdp$Country.Name %in% ex_country),c(2:31)])
+ex_data = as.data.frame(ex_data)
+colnames(ex_data) = ex_country
+lapply(ex_data, statsNA)
+
+data_miss = t(gdp[which(gdp$Country.Name=="Afghanistan"),c(2:31)])
+statsNA(data_miss)
+ggplot_na_distribution(data_miss)
+data_imputation = na_interpolation(data_miss,"linear")
+ggplot_na_imputations(data_miss, data_imputation)
+
+for (i in 1:length(ex_country)){
+  data_miss = t(gdp[which(gdp$Country.Name==ex_country[i]),c(2:31)])
+  data_imputation = na_interpolation(data_miss,"linear")
+  gdp[which(gdp$Country.Name==ex_country[i]),c(2:31)] = t(data_imputation)
+}
+
+################################################################################
 # reform data
 ################################################################################
+
+country = country[order(country)]
 
 for (i in 1990:2019){
   if (i==1990){
@@ -356,11 +402,11 @@ for (i in 1990:2019){
     new_hw_max_degree = hw_max_degree[,i-1990+1]
     new_cw = cw[,i-1990+1]
     
-    new_gdp = gdp[,i-1990+3]
+    new_gdp = gdp[,i-1990+2]
     new_temp = temp[,i-1990+2]
     new_pop = pop[,i-1990+2]
     
-    year = rep(i-1990,137)
+    year = rep(i-1990,159)
     new_country = country
     
     new_sex_ratio = sex_ratio$mPer100F
@@ -388,11 +434,11 @@ for (i in 1990:2019){
     new_hw_max_degree = append(new_hw_max_degree,hw_max_degree[,i-1990+1])
     new_cw = append(new_cw,cw[,i-1990+1])
     
-    new_gdp = append(new_gdp,gdp[,i-1990+3])
+    new_gdp = append(new_gdp,gdp[,i-1990+2])
     new_temp = append(new_temp,temp[,i-1990+2])
     new_pop = append(new_pop,pop[,i-1990+2])
     
-    year = append(year,rep(i-1990,137))
+    year = append(year,rep(i-1990,159))
     new_country = append(new_country,country)
     
     new_sex_ratio = append(new_sex_ratio,sex_ratio$mPer100F)
@@ -427,9 +473,7 @@ for (i in 1:30){
 
 # combine sex_ratio and age_ratio
 data$sex_ratio = new_sex_ratio
-data$age_ratio = new_age_ratio
 data$sex_ratio = as.numeric(data$sex_ratio)
-data$age_ratio = as.numeric(data$age_ratio)
 
 # add coutry
 data$country = new_country
@@ -449,5 +493,6 @@ data$gnigroup = as.factor(data$gnigroup)
 # save data
 ################################################################################
 
+data = data[!(data$country %in% country_exclude),]
 write.csv(data,'data for analysis.csv',quote = FALSE)
 
