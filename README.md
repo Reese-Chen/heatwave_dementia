@@ -15,7 +15,7 @@ We derived the gridded daily temperatures at 1km resolution for the United Kingd
 To apply the population-weighted methods to the heatwave measures, we also obtained the estimated numbers of people (per 30-arc-second grid cell) from the 2010 Census on Google Earth Engine (https://developers.google.cn/earth-engine/datasets/catalog/CIESIN_GPWv411_GPW_Basic_Demographic_Characteristics?hl=en).
 
 ### 3. GDP data, population, and GNI indices
-The World Bank provides the annual GDP, GNI Index and population of countries around the world from 1960 to 2021 (https://databank.worldbank.org/).
+The World Bank provides the annual per capita GDP, GNI Index and population of countries around the world from 1960 to 2021 (https://databank.worldbank.org/).
 
 GDP by states in United States was derived from the U.S. Bureau of Economic Analysis (https://www.beu.gov).
 
