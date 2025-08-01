@@ -13,6 +13,7 @@ library(outliers)
 library(meta)
 library(dmetar)
 library(effectsize)
+library(splines)
 
 p = ggplot(data,aes(x=year+1990,y=cw,color=country))+
   geom_line()
@@ -22,7 +23,7 @@ ggsave(p,filename = 'trend of cw.pdf',width=20,height=4)
 ################################################################################
 # load data
 ################################################################################
-
+rm(list=ls())
 setwd("d:/heatwave and dementia/data")
 data = read.table(file = "data for analysis.csv", header = T , check.names=F,
                   sep = "," , fill = TRUE , encoding = "UTF-8",quote="")
@@ -31,18 +32,18 @@ data = data[,-1]
 data_high = data[which(data$gnigroup=='high income'),]
 data_low = data[which(data$gnigroup=='mid and low income'),]
 
-################################################################################
-# basic meta regression
-################################################################################
-
 country = unique(data$country)
 highcountry = unique(data[which(data$gnigroup=='high income'),]$country)
 lowcountry = unique(data[which(data$gnigroup=='mid and low income'),]$country)
 
+################################################################################
+# basic meta regression
+################################################################################
+
 # 1. calculate beta-----------------------------------------------------------
 
 ### regression in each country
-result1 = matrix(0,nrow=length(country),ncol=33,
+result1 = matrix(0,nrow=length(country),ncol=30,
                  dimnames=list(country,c("beta","SE","p","beta_origin","SE_origin",
                                          "cw_mean","cw_sd","cw_slope",
                                          "gdp_mean","gdp_sd","gdp_slope",
@@ -50,7 +51,6 @@ result1 = matrix(0,nrow=length(country),ncol=33,
                                          "pop_mean","pop_sd","pop_slope",
                                          "mort_as_mean","mort_as_sd","mort_as_slope",
                                          "sex_ratio","sex_ratio_sd","sex_ratio_slope",
-                                         "age_ratio","age_ratio_sd","age_ratio_slope",
                                          "Estimate","Estimate_orgin","reformed_p","eta",
                                          "beta_hwgdp","SE_hwgdp","Estimate_hwgdp")))
 t = 0:29
@@ -62,7 +62,7 @@ for (i in seq(length(country))){
   sd_hw = sd(data1$hw)
   
   count = 0
-  for (j in c(16:19,22,24:25)){
+  for (j in c(16:19,22,24)){
     count = count+1
     if (!(is.na(data1[1,j]))){
       result1[i,(count*3+3)] = mean(data1[,j])
@@ -72,18 +72,19 @@ for (i in seq(length(country))){
     }
   }
   
-  data1[,c(2,9,17)] = scale(data1[,c(2,9,17)])
+  data1$hw = scale(data1$hw)
+  data1$gdp = scale(data1$gdp)
   
   model = lm(inci_as~year+hw+gdp+hw:gdp,data=data1)
   fit = summary(model)
   eta = eta_squared(model, partial = TRUE,ci=0.95,alternative = "two.sided")
   result1[i,1:2] = fit$coefficients[3,1:2]
   result1[i,3] = fit$coefficients[3,4]
-  result1[i,4:5] = fit$coefficients[3,1:2]*sd_inci/sd_hw
-  result1[i,30] = eta$Eta2_partial[2]*sign(fit$coefficients[3,1])
+  result1[i,4:5] = fit$coefficients[3,1:2]*sd_hw
+  result1[i,27] = eta$Eta2_partial[2]*sign(fit$coefficients[3,1])
   
-  result1[i,31:32] = fit$coefficients[5,1:2]
-  result1[i,33] = paste(signif(fit$coefficients[5,1],3),' (',signif(confint(model)[5,1],3),' to ',signif(confint(model)[5,2],3),')',sep="")
+  result1[i,28:29] = fit$coefficients[5,1:2]
+  result1[i,30] = paste(signif(fit$coefficients[5,1],3),' (',signif(confint(model)[5,1],3),' to ',signif(confint(model)[5,2],3),')',sep="")
   
   beta = signif(fit$coefficients[3,1],3)
   p = signif(fit$coefficients[5,4],2)
@@ -97,53 +98,25 @@ for (i in seq(length(country))){
   CI_low_origin = signif(confint(model)[3,1]*sd_inci/sd_hw,3) 
   CI_high_origin = signif(confint(model)[3,2]*sd_inci/sd_hw,3) 
   
-  result1[i,27] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-  result1[i,29] = p
-  result1[i,28] = paste(beta_origin,' (',CI_low_origin,' to ',CI_high_origin,')',sep="")
+  result1[i,24] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  result1[i,26] = p
+  result1[i,25] = paste(beta_origin,' (',CI_low_origin,' to ',CI_high_origin,')',sep="")
   
 }
 
 write.csv(result1,'first stage regression result for hw.csv')
 
-result1 = result1[,c(1:21,24,30:32)]
-result_high = result1[which(rownames(result1) %in% highcountry),]
-result_low = result1[which(rownames(result1) %in% lowcountry),]
-
+result1 = result1[,c(1:21,27:29)]
 result1 = apply(result1, 2, as.numeric)
-result_high = apply(result_high,2,as.numeric)
-result_low = apply(result_low,2,as.numeric)
 
 result1 = as.data.frame(result1)
-result1$gdp_mean = log(result1$gdp_mean)
-result1$gdp_sd = log(result1$gdp_sd)
-result1$gdp_slope = log(result1$gdp_slope)
-result1$pop_mean = log(result1$pop_mean)
-result1$pop_sd = log(result1$pop_sd)
-result1$pop_slope = log(result1$pop_slope)
-result1$mort_as_sd = log(result1$mort_as_sd) 
-result1[,c(6:22)] = lapply(result1[,c(6:22)], scale)
-
-result_high = as.data.frame(result_high)
-result_high$gdp_mean = log(result_high$gdp_mean)
-result_high$gdp_sd = log(result_high$gdp_sd)
-result_high$gdp_slope = log(result_high$gdp_slope)
-result_high$pop_mean = log(result_high$pop_mean)
-result_high$pop_sd = log(result_high$pop_sd)
-result_high$pop_slope = log(result_high$pop_slope)
-result_high[,c(6:22)] = scale(result_high[,c(6:22)])
-
-result_low = as.data.frame(result_low)
-result_low$gdp_mean = log(result_low$gdp_mean)
-result_low$gdp_sd = log(result_low$gdp_sd)
-result_low$gdp_slope = log(result_low$gdp_slope)
-result_low$pop_mean = log(result_low$pop_mean)
-result_low$pop_sd = log(result_low$pop_sd)
-result_low$pop_slope = log(result_low$pop_slope)
-result_low[,c(6:22)] = scale(result_low[,c(6:22)])
+result1$country = country
+result_high = result1[which(result1$country %in% highcountry),]
+result_low = result1[which(result1$country %in% lowcountry),]
 
 # boxplot of the beta at first stage
 
-plot_data = result1[,c(3,23)]
+plot_data = result1[,c(3,22)]
 plot_data$gni_group = "high-income"
 plot_data$gni_group[which(country %in% lowcountry)] = "low- to middle-income"
 plot_data$gni_group = as.factor(plot_data$gni_group)
@@ -171,21 +144,21 @@ p1 = ggplot(plot_data,aes(x=gni_group,y=eta,color=gni_group))+
 ggsave(p1,filename='boxplot of comparision of beta at first stage regression.pdf',
        width=4,height=4)
 
-# 2. two-stage meta in all 137 countries----------------------------------------
+# 2. two-stage meta in all 153 countries----------------------------------------
 
 plot(result1$beta,result1$cw_mean)
 
 
-second_stage_res = matrix(0,nrow=18,ncol=16,
+second_stage_res = matrix(0,nrow=17,ncol=16,
                           dimnames = list(c("cw_mean","cw_sd","cw_slope",
                                             "gdp_mean","gdp_sd","gdp_slope",
                                             "temp_mean","temp_sd","temp_slope",
                                             "pop_mean","pop_sd","pop_slope",
                                             "mort_as_mean","mort_as_sd","mort_as_slope",
-                                            "age_ratio","sex_ratio","none"),
+                                            "sex_ratio","none"),
                                           rep(c('beta','se','zval','pval','ci.lb','ci.ub','estimate','p_reformed'),2)))
 
-for (i in 1:17){
+for (i in 1:16){
   
   meta_analysis = rma(yi = beta, sei = SE, mods = ~result1[,i+5], data = result1)
   fit = summary(meta_analysis)
@@ -232,15 +205,13 @@ for (i in 1:17){
 
 meta_analysis = rma(yi = beta, sei = SE, data = result1)
 find.outliers(meta_analysis)
-
-
 fit = summary(meta_analysis)
-second_stage_res[18,1] = fit$beta[1]
-second_stage_res[18,2] = fit$se[1]
-second_stage_res[18,3] = fit$zval[1]
-second_stage_res[18,4] = fit$pval[1]
-second_stage_res[18,5] = fit$ci.lb[1]
-second_stage_res[18,6] = fit$ci.ub[1]
+second_stage_res[17,1] = fit$beta[1]
+second_stage_res[17,2] = fit$se[1]
+second_stage_res[17,3] = fit$zval[1]
+second_stage_res[17,4] = fit$pval[1]
+second_stage_res[17,5] = fit$ci.lb[1]
+second_stage_res[17,6] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -249,17 +220,17 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,8] = p
+second_stage_res[17,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,8] = p
 
 meta_analysis = rma(yi = beta_origin, sei = SE_origin, data = result1)
 fit = summary(meta_analysis)
-second_stage_res[18,9] = fit$beta[1]
-second_stage_res[18,10] = fit$se[1]
-second_stage_res[18,11] = fit$zval[1]
-second_stage_res[18,12] = fit$pval[1]
-second_stage_res[18,13] = fit$ci.lb[1]
-second_stage_res[18,14] = fit$ci.ub[1]
+second_stage_res[17,9] = fit$beta[1]
+second_stage_res[17,10] = fit$se[1]
+second_stage_res[17,11] = fit$zval[1]
+second_stage_res[17,12] = fit$pval[1]
+second_stage_res[17,13] = fit$ci.lb[1]
+second_stage_res[17,14] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -268,10 +239,10 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,16] = p
+second_stage_res[17,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,16] = p
 
-write.csv(second_stage_res,'second stage regression result for hw in all 137 countries.csv')
+write.csv(second_stage_res,'second stage regression result for hw in all 153 countries.csv')
 
 meta_analysis = rma(yi = beta_hwgdp, sei = SE_hwgdp, data = result1)
 summary(meta_analysis)
@@ -280,16 +251,16 @@ find.outliers(meta_analysis)
 
 # 3. two-stage meta in high-income countries------------------------------------
 
-second_stage_res = matrix(0,nrow=18,ncol=16,
+second_stage_res = matrix(0,nrow=17,ncol=16,
                           dimnames = list(c("cw_mean","cw_sd","cw_slope",
                                             "gdp_mean","gdp_sd","gdp_slope",
                                             "temp_mean","temp_sd","temp_slope",
                                             "pop_mean","pop_sd","pop_slope",
                                             "mort_as_mean","mort_as_sd","mort_as_slope",
-                                            "age_ratio","sex_ratio","none"),
+                                            "sex_ratio","none"),
                                           rep(c('beta','se','zval','pval','ci.lb','ci.ub','estimate','p_reformed'),2)))
 
-for (i in 1:17){
+for (i in 1:16){
   
   meta_analysis = rma(yi = beta, sei = SE, mods = ~result_high[,i+5], data = result_high)
   fit = summary(meta_analysis)
@@ -337,12 +308,12 @@ for (i in 1:17){
 meta_analysis = rma(yi = beta, sei = SE, data = result_high)
 find.outliers(meta_analysis)
 fit = summary(meta_analysis)
-second_stage_res[18,1] = fit$beta[1]
-second_stage_res[18,2] = fit$se[1]
-second_stage_res[18,3] = fit$zval[1]
-second_stage_res[18,4] = fit$pval[1]
-second_stage_res[18,5] = fit$ci.lb[1]
-second_stage_res[18,6] = fit$ci.ub[1]
+second_stage_res[17,1] = fit$beta[1]
+second_stage_res[17,2] = fit$se[1]
+second_stage_res[17,3] = fit$zval[1]
+second_stage_res[17,4] = fit$pval[1]
+second_stage_res[17,5] = fit$ci.lb[1]
+second_stage_res[17,6] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -351,17 +322,17 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,8] = p
+second_stage_res[17,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,8] = p
 
 meta_analysis = rma(yi = beta_origin, sei = SE_origin, data = result_high)
 fit = summary(meta_analysis)
-second_stage_res[18,9] = fit$beta[1]
-second_stage_res[18,10] = fit$se[1]
-second_stage_res[18,11] = fit$zval[1]
-second_stage_res[18,12] = fit$pval[1]
-second_stage_res[18,13] = fit$ci.lb[1]
-second_stage_res[18,14] = fit$ci.ub[1]
+second_stage_res[17,9] = fit$beta[1]
+second_stage_res[17,10] = fit$se[1]
+second_stage_res[17,11] = fit$zval[1]
+second_stage_res[17,12] = fit$pval[1]
+second_stage_res[17,13] = fit$ci.lb[1]
+second_stage_res[17,14] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -370,8 +341,8 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,16] = p
+second_stage_res[17,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,16] = p
 
 write.csv(second_stage_res,'second stage regression result for hw in high-income countries.csv')
 
@@ -382,16 +353,16 @@ find.outliers(meta_analysis)
 
 # 3. two-stage meta in low- to middle-income countries--------------------------
 
-second_stage_res = matrix(0,nrow=18,ncol=16,
+second_stage_res = matrix(0,nrow=17,ncol=16,
                           dimnames = list(c("cw_mean","cw_sd","cw_slope",
                                             "gdp_mean","gdp_sd","gdp_slope",
                                             "temp_mean","temp_sd","temp_slope",
                                             "pop_mean","pop_sd","pop_slope",
                                             "mort_as_mean","mort_as_sd","mort_as_slope",
-                                            "age_ratio","sex_ratio","none"),
+                                            "sex_ratio","none"),
                                           rep(c('beta','se','zval','pval','ci.lb','ci.ub','estimate','p_reformed'),2)))
 
-for (i in 1:17){
+for (i in 1:16){
   
   meta_analysis = rma(yi = beta, sei = SE, mods = ~result_low[,i+5], data = result_low)
   fit = summary(meta_analysis)
@@ -439,12 +410,12 @@ for (i in 1:17){
 meta_analysis = rma(yi = beta, sei = SE, data = result_low)
 find.outliers(meta_analysis)
 fit = summary(meta_analysis)
-second_stage_res[18,1] = fit$beta[1]
-second_stage_res[18,2] = fit$se[1]
-second_stage_res[18,3] = fit$zval[1]
-second_stage_res[18,4] = fit$pval[1]
-second_stage_res[18,5] = fit$ci.lb[1]
-second_stage_res[18,6] = fit$ci.ub[1]
+second_stage_res[17,1] = fit$beta[1]
+second_stage_res[17,2] = fit$se[1]
+second_stage_res[17,3] = fit$zval[1]
+second_stage_res[17,4] = fit$pval[1]
+second_stage_res[17,5] = fit$ci.lb[1]
+second_stage_res[17,6] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -453,17 +424,17 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,8] = p
+second_stage_res[17,7] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,8] = p
 
 meta_analysis = rma(yi = beta_origin, sei = SE_origin, data = result_low)
 fit = summary(meta_analysis)
-second_stage_res[18,9] = fit$beta[1]
-second_stage_res[18,10] = fit$se[1]
-second_stage_res[18,11] = fit$zval[1]
-second_stage_res[18,12] = fit$pval[1]
-second_stage_res[18,13] = fit$ci.lb[1]
-second_stage_res[18,14] = fit$ci.ub[1]
+second_stage_res[17,9] = fit$beta[1]
+second_stage_res[17,10] = fit$se[1]
+second_stage_res[17,11] = fit$zval[1]
+second_stage_res[17,12] = fit$pval[1]
+second_stage_res[17,13] = fit$ci.lb[1]
+second_stage_res[17,14] = fit$ci.ub[1]
 
 beta = signif(fit$beta[1],3)
 p = signif(fit$pval[1],2)
@@ -472,8 +443,8 @@ if (p<0.0001){
 }
 CI_low = signif(fit$ci.lb[1],3)
 CI_high = signif(fit$ci.ub[1],3)
-second_stage_res[18,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
-second_stage_res[18,16] = p
+second_stage_res[17,15] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+second_stage_res[17,16] = p
 
 write.csv(second_stage_res,'second stage regression result for hw in low- to middle-income countries.csv')
 
@@ -495,7 +466,7 @@ result1 = matrix(0,nrow=length(country),ncol=8,
 for (i in seq(length(country))){
   
   data1 = data[which(data$country==country[i]),]
-  data1[,c(2,9,17,18)] = scale(data1[,c(2,9,17,18)])
+  data1[,c(9,17,18)] = scale(data1[,c(9,17,18)])
   model = lm(inci_as~year+hw+gdp+temp+gdp:hw,data = data1)
   fit = summary(model)
   # hw
@@ -831,7 +802,162 @@ write.csv(result1,'first stage regression without special year.csv')
 meta_analysis = rma(yi = hw_beta, sei = hw_SE, data = result1)
 summary(meta_analysis)
 
+# 8. higher order effect of years-----------------------------------------------
 
+# 8.1 first stage analysis------------------------------------------------------
+
+result1 = matrix(0,nrow=length(country),ncol=16,
+                 dimnames = list(country,c("hw1_beta","hw1_SE","hw1_p","hw1_estimate",
+                                           "hw2_beta","hw2_SE","hw2_p","hw2_estimate",
+                                           "year1_beta","year1_SE","year1_p","year1_estimate",
+                                           "year2_beta","year2_SE","year2_p","year2_estimate")))
+for (i in seq(length(country))){
+  
+  data1 = data[which(data$country==country[i]),]
+  data1[,c(2,9,17,18)] = scale(data1[,c(2,9,17,18)])
+  model = lm(inci_as~ns(hw,knots=3)+gdp+ns(year,knots=3),data = data1)
+  fit = summary(model)
+  # hw
+  result1[i,1:2] = fit$coefficients[2,1:2]
+  beta = signif(fit$coefficients[2,1],3)
+  p = signif(fit$coefficients[2,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[2,1],3)
+  CI_high = signif(confint(model)[2,2],3)
+  result1[i,3] = p
+  result1[i,4] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  # year1
+  result1[i,5:6] = fit$coefficients[4,1:2]
+  beta = signif(fit$coefficients[4,1],3)
+  p = signif(fit$coefficients[4,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[4,1],3)
+  CI_high = signif(confint(model)[4,2],3)
+  result1[i,7] = p
+  result1[i,8] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  # year2
+  result1[i,9:10] = fit$coefficients[5,1:2]
+  beta = signif(fit$coefficients[5,1],3)
+  p = signif(fit$coefficients[5,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[5,1],3)
+  CI_high = signif(confint(model)[5,2],3)
+  result1[i,11] = p
+  result1[i,12] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  
+}
+
+write.csv(result1,'first stage regression with higher order year effects.csv')
+
+result1 = result1[,c(1:2,5:6,9:10)]
+result1 = apply(result1, 2, as.numeric)
+
+# 8.2 second stage analysis-----------------------------------------------------
+
+meta_analysis = rma(yi = hw_beta, sei = hw_SE, data = result1)
+summary(meta_analysis)
+
+meta_analysis = rma(yi = year1_beta, sei = year1_SE, data = result1)
+summary(meta_analysis)
+
+meta_analysis = rma(yi = year2_beta, sei = year2_SE, data = result1)
+summary(meta_analysis)
+
+# 8. higher order effect of years-----------------------------------------------
+
+# 8.1 first stage analysis------------------------------------------------------
+
+result1 = matrix(0,nrow=length(country),ncol=16,
+                 dimnames = list(country,c("hw1_beta","hw1_SE","hw1_p","hw1_estimate",
+                                           "hw2_beta","hw2_SE","hw2_p","hw2_estimate",
+                                           "year1_beta","year1_SE","year1_p","year1_estimate",
+                                           "year2_beta","year2_SE","year2_p","year2_estimate")))
+for (i in seq(length(country))){
+  
+  data1 = data[which(data$country==country[i]),]
+  data1[,c(2,9,17,18)] = scale(data1[,c(2,9,17,18)])
+  model = lm(inci_as~ns(hw,knots=3)+gdp+ns(year,knots=3),data = data1)
+  fit = summary(model)
+  # hw
+  result1[i,1:2] = fit$coefficients[2,1:2]
+  beta = signif(fit$coefficients[2,1],3)
+  p = signif(fit$coefficients[2,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[2,1],3)
+  CI_high = signif(confint(model)[2,2],3)
+  result1[i,3] = p
+  result1[i,4] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  # year1
+  result1[i,5:6] = fit$coefficients[4,1:2]
+  beta = signif(fit$coefficients[4,1],3)
+  p = signif(fit$coefficients[4,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[4,1],3)
+  CI_high = signif(confint(model)[4,2],3)
+  result1[i,7] = p
+  result1[i,8] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  # year2
+  result1[i,9:10] = fit$coefficients[5,1:2]
+  beta = signif(fit$coefficients[5,1],3)
+  p = signif(fit$coefficients[5,4],2)
+  if (p<0.0001){
+    p = "<0.0001"
+  }
+  CI_low = signif(confint(model)[5,1],3)
+  CI_high = signif(confint(model)[5,2],3)
+  result1[i,11] = p
+  result1[i,12] = paste(beta,' (',CI_low,' to ',CI_high,')',sep="")
+  
+}
+
+write.csv(result1,'first stage regression with higher order year effects.csv')
+
+result1 = result1[,c(1:2,5:6,9:10)]
+result1 = apply(result1, 2, as.numeric)
+
+# 8.2 second stage analysis-----------------------------------------------------
+
+meta_analysis = rma(yi = hw_beta, sei = hw_SE, data = result1)
+summary(meta_analysis)
+
+meta_analysis = rma(yi = year1_beta, sei = year1_SE, data = result1)
+summary(meta_analysis)
+
+meta_analysis = rma(yi = year2_beta, sei = year2_SE, data = result1)
+summary(meta_analysis)
+
+################################################################################
+# test the residuals in first-stage analysis
+################################################################################
+
+result1 = matrix(0,nrow=length(country),ncol=1,
+                 dimnames = list(country,c("p_normal")))
+for (i in seq(length(country))){
+  
+  data1 = data[which(data$country==country[i]),]
+  data1[,c(2,9,17,18)] = scale(data1[,c(2,9,17,18)])
+  model = lm(inci_as~hw*gdp+ns(year,knots=3),data = data1)
+  result1[i,1] = shapiro.test(residuals(model))$p.value
+}
+
+write.csv(result1,'residuals in first-stage analysis.csv')
+
+data1 = data[which(data$country=="Azerbaijan"),]
+plot(data1$year+1990,data1$inci_as)
+data1[,c(2,9,17,18)] = scale(data1[,c(2,9,17,18)])
+model = lm(inci_as~hw*gdp+year,data = data1)
+plot(residuals(model))
+result1[i,1] = shapiro.test(residuals(model))$p.value
 
 ################################################################################
 # visualization of significant countries at first level
