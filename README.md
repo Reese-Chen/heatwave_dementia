@@ -1,11 +1,11 @@
 # heatwave_dementia
-Collection of data sources and scripts for "Heatwave and Dementia: A Global Study of 137 Countries between 1990 and 2019"
+Collection of data sources and scripts for "Heatwave and Dementia: A systematic analysis for the Global Burden of Disease Study 2019"
 
 ## Data sources
 We mainly derived original data from these databases:
 
 ### 1. Dementia data
-We obtained the data for dementia from the Global Burden of Disease (GBD) study via the Global Health Data Exchange (GHDx; https://ghdx.healthdata.org), which includes age-standardized and all ages incidence and prevalence for dementia from 1990 to 2019 as well as incidence rate of dementia for 15 different groups of age and sex. We also derived the mortality data for dementia from the GBD.
+We obtained the data for dementia from the Global Burden of Disease 2019 (GBD2019) study via the Global Health Data Exchange (GHDx; https://ghdx.healthdata.org), which includes age-standardized and all ages incidence and prevalence for dementia from 1990 to 2019 as well as incidence rate of dementia for 15 different groups of age and sex. We also derived the mortality data for dementia from the GBD.
 
 ### 2. Temperature and population data
 We obtained the daily temperatures for these countries and territories using the ERA5 database, which is a gridded reanalysis dataset produced by the European Centre for Medium-Range Weather Forecasts with a 1° × 1° spatial resolution on the Google Earth Engine (https://developers.google.com/earth-engine/datasets/catalog/ECMWF_ERA5_DAILY#description).
@@ -26,7 +26,7 @@ We also obtained the national gender and age structures from the World Populatio
 For individual-level validation, we utilized the home location and diagnosis data of dementia from UK Biobank (www.ukbiobank.ac.uk).
 
 ## Dataset
-We constructed a Dementia-heatwave dataset spanning 137 countries from 1990 to 2019, stored in the "data" folder (https://github.com/Reese-Chen/heatwave_dementia/tree/main/data), which includes the data used for subsequent analysis.
+We constructed a Dementia-heatwave dataset spanning 153 countries from 1990 to 2019, stored in the "data" folder (https://github.com/Reese-Chen/heatwave_dementia/tree/main/data), which includes the data used for subsequent analysis.
 
 ## Scripts
 All necessary scripts should be in the "code" file (https://github.com/Reese-Chen/heatwave_dementia/tree/main/code). Scripts for analysis are included in the file "code for analysis", and scripts for data extraction and index calculation are included in the file "data extraction and prepocessing". 
