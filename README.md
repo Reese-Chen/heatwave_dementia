@@ -1,6 +1,8 @@
 # heatwave_dementia
 Collection of data sources and scripts for "Heatwave and Dementia: A systematic analysis for the Global Burden of Disease Study 2019"
 
+Chen, Y., Luo, Y., Yu, L., Zheng, X. & Luo, Q. Heatwave and dementia: a systematic analysis for the Global Burden of Disease Study 2019. bmjph 3, e002172 (2025).
+
 ## Data sources
 We mainly derived original data from these databases:
 
